@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1786307827956,
+      "tag": "0000_hard_kitty_pryde",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1786307934973,
+      "tag": "0001_flawless_veda",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1786307996475,
+      "tag": "0002_natural_shaman",
+      "breakpoints": true
+    }
+  ]
+}
