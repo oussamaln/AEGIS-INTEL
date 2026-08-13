@@ -6,10 +6,12 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Services from "./pages/Services";
+import Pricing from "./pages/Pricing";
 import FAQ from "./pages/FAQ";
 import Contact from "./pages/Contact";
 import Request from "./pages/Request";
 import Submitted from "./pages/Submitted";
+import TrackCase from "./pages/TrackCase";
 import Dashboard from "./pages/Dashboard";
 
 function Router() {
@@ -17,10 +19,12 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/services"} component={Services} />
+      <Route path={"/pricing"} component={Pricing} />
       <Route path={"/faq"} component={FAQ} />
       <Route path={"/contact"} component={Contact} />
       <Route path={"/request"} component={Request} />
       <Route path={"/submitted"} component={Submitted} />
+      <Route path={"/track"} component={TrackCase} />
       <Route path={"/dashboard"} component={Dashboard} />
       <Route path={"/dashboard/requests/:id"} component={Dashboard} />
       <Route path={"/404"} component={NotFound} />

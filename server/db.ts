@@ -1,10 +1,10 @@
-import { eq, desc } from "drizzle-orm";
+import { asc, eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, users,
-  investigationRequests, attachments, payments, reports, adminNotes, auditLogs,
+  investigationRequests, attachments, payments, reports, adminNotes, clientUpdates, contactMessages, auditLogs,
   type InsertInvestigationRequest, type InvestigationRequest,
-  type Attachment, type Payment, type Report, type AdminNote, type AuditLog
+  type Attachment, type Payment, type Report, type AdminNote, type ClientUpdate, type ContactMessage, type AuditLog
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -196,6 +196,48 @@ export async function getAdminNotesForRequest(requestId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db.select().from(adminNotes).where(eq(adminNotes.requestId, requestId)).orderBy(desc(adminNotes.createdAt));
+}
+
+export async function createClientUpdate(data: { requestId: number; message: string; status?: string | null; adminUserId?: number | null }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [res] = await db.insert(clientUpdates).values(data);
+  return res.insertId;
+}
+
+export async function getClientUpdatesForRequest(requestId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(clientUpdates).where(eq(clientUpdates.requestId, requestId)).orderBy(asc(clientUpdates.createdAt));
+}
+
+export async function createContactMessage(data: { name: string; email: string; subject: string; message: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [res] = await db.insert(contactMessages).values(data);
+  return res.insertId;
+}
+
+export async function getAllContactMessages() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt));
+}
+
+export async function getContactMessageById(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [message] = await db.select().from(contactMessages).where(eq(contactMessages.id, id));
+  return message;
+}
+
+export async function updateContactMessageStatus(id: number, status: "NEW" | "READ" | "REPLIED" | "ARCHIVED") {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const updateData: { status: "NEW" | "READ" | "REPLIED" | "ARCHIVED"; readAt?: Date; repliedAt?: Date } = { status };
+  if (status === "READ") updateData.readAt = new Date();
+  if (status === "REPLIED") updateData.repliedAt = new Date();
+  await db.update(contactMessages).set(updateData).where(eq(contactMessages.id, id));
 }
 
 export async function createAuditLog(data: { adminUserId?: number; action: string; requestId?: number; metadata?: string }) {

@@ -31,13 +31,11 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium text-slate-300">
             <Link href="/" className={`hover:text-cyan-400 transition-colors ${location === '/' ? 'text-cyan-400 font-semibold' : ''}`}>Home</Link>
             <Link href="/services" className={`hover:text-cyan-400 transition-colors ${location === '/services' ? 'text-cyan-400 font-semibold' : ''}`}>Services</Link>
+            <Link href="/pricing" className={`hover:text-cyan-400 transition-colors ${location === '/pricing' ? 'text-cyan-400 font-semibold' : ''}`}>Pricing</Link>
+            <Link href="/track" className={`hover:text-cyan-400 transition-colors ${location === '/track' ? 'text-cyan-400 font-semibold' : ''}`}>Track Case</Link>
             <Link href="/faq" className={`hover:text-cyan-400 transition-colors ${location === '/faq' ? 'text-cyan-400 font-semibold' : ''}`}>FAQ</Link>
             <Link href="/contact" className={`hover:text-cyan-400 transition-colors ${location === '/contact' ? 'text-cyan-400 font-semibold' : ''}`}>Contact</Link>
-            {user?.role === 'admin' && (
-              <Link href="/dashboard" className="text-amber-400 hover:text-amber-300 transition-colors font-semibold flex items-center gap-1">
-                <Lock className="w-3.5 h-3.5" /> Staff Dashboard
-              </Link>
-            )}
+
           </nav>
 
           <div className="flex items-center space-x-3">
@@ -74,6 +72,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <li><Link href="/services" className="hover:text-cyan-400 transition-colors">Scam & Fraud Tracking</Link></li>
               <li><Link href="/services" className="hover:text-cyan-400 transition-colors">SOCMINT Profiling</Link></li>
               <li><Link href="/services" className="hover:text-cyan-400 transition-colors">Blockchain Tracing</Link></li>
+              <li><Link href="/track" className="hover:text-cyan-400 transition-colors">Track a Case</Link></li>
             </ul>
           </div>
           <div>

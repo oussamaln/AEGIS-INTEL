@@ -6,19 +6,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Mail, Shield, Send, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
+  const submitMessage = trpc.contact.submit.useMutation({
+    onSuccess: () => {
+      setSubmitted(true);
+      setForm({ name: "", email: "", subject: "", message: "" });
+      toast.success("Contact message transmitted successfully.");
+    },
+    onError: error => toast.error(error.message),
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.message) {
+    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
       toast.error("Please fill in all required fields.");
       return;
     }
-    setSubmitted(true);
-    toast.success("Contact message transmitted successfully.");
+    submitMessage.mutate(form);
   };
 
   return (
@@ -117,8 +125,8 @@ export default function Contact() {
                   />
                 </div>
 
-                <Button type="submit" className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-semibold py-6">
-                  <Send className="w-4 h-4 mr-2" /> Transmit Secure Message
+                <Button type="submit" disabled={submitMessage.isPending} className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-semibold py-6">
+                  <Send className="w-4 h-4 mr-2" /> {submitMessage.isPending ? "Transmitting…" : "Transmit Secure Message"}
                 </Button>
               </form>
             )}

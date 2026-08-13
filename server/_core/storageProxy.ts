@@ -9,6 +9,18 @@ export function registerStorageProxy(app: Express) {
       return;
     }
 
+    // Evidence and final reports are only issued as signed links by the
+    // authenticated staff download procedure; never expose them through this
+    // generic public proxy, even when a storage key is known.
+    if (
+      key.startsWith("evidence/") ||
+      key.startsWith("attachments/") ||
+      key.startsWith("reports/")
+    ) {
+      res.status(403).send("Private investigation files require staff authorization");
+      return;
+    }
+
     if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
       res.status(500).send("Storage proxy not configured");
       return;

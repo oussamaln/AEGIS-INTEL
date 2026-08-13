@@ -95,6 +95,29 @@ export const adminNotes = mysqlTable("admin_notes", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+/** Client-safe status entries and messages. Never store internal investigation notes here. */
+export const clientUpdates = mysqlTable("client_updates", {
+  id: int("id").autoincrement().primaryKey(),
+  requestId: int("requestId").notNull(),
+  adminUserId: int("adminUserId"),
+  status: varchar("status", { length: 32 }),
+  message: text("message").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+/** Public website inquiries. Access is limited to staff administrators. */
+export const contactMessages = mysqlTable("contact_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 120 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  subject: varchar("subject", { length: 180 }).notNull(),
+  message: text("message").notNull(),
+  status: mysqlEnum("status", ["NEW", "READ", "REPLIED", "ARCHIVED"]).default("NEW").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  readAt: timestamp("readAt"),
+  repliedAt: timestamp("repliedAt"),
+});
+
 export const auditLogs = mysqlTable("audit_logs", {
   id: int("id").autoincrement().primaryKey(),
   adminUserId: int("adminUserId"),
@@ -110,4 +133,6 @@ export type Attachment = typeof attachments.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
 export type Report = typeof reports.$inferSelect;
 export type AdminNote = typeof adminNotes.$inferSelect;
+export type ClientUpdate = typeof clientUpdates.$inferSelect;
+export type ContactMessage = typeof contactMessages.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;

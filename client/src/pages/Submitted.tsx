@@ -2,7 +2,7 @@ import React from "react";
 import { PublicLayout } from "@/components/PublicLayout";
 import { Button } from "@/components/ui/button";
 import { Link, useSearch } from "wouter";
-import { CheckCircle2, Shield, ArrowRight, FileText, Clock } from "lucide-react";
+import { CheckCircle2, Shield, ArrowRight, FileText, Clock, KeyRound } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 export default function Submitted() {
@@ -39,6 +39,11 @@ export default function Submitted() {
             </span>
           </div>
 
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs leading-relaxed text-amber-100">
+            <div className="flex items-center gap-2 font-semibold text-amber-300 mb-1"><KeyRound className="w-3.5 h-3.5" /> Save this reference code</div>
+            Keep it private. You will need it to track your case status and read messages from the AEGIS INTEL team.
+          </div>
+
           <div className="flex items-center justify-between border-b border-slate-800 pb-4">
             <span className="text-xs font-mono text-slate-400 uppercase">Current Status</span>
             <span className="text-xs font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full flex items-center gap-1.5">
@@ -60,9 +65,9 @@ export default function Submitted() {
               Return to Home
             </Button>
           </Link>
-          <Link href="/services">
+          <Link href={`/track?ref=${encodeURIComponent(requestInfo?.referenceCode || refCode)}`}>
             <Button variant="outline" className="w-full sm:w-auto border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800 px-8 py-3">
-              Explore Services
+              Track This Request
             </Button>
           </Link>
         </div>

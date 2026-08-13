@@ -60,7 +60,6 @@ export default function Home() {
       </section>
 
       {/* Services Overview */}
-      py-24 bg-[#070a10] border-t border-slate-800
       <section className="py-24 bg-[#070a10] border-t border-slate-800">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="text-center max-w-2xl mx-auto mb-16">

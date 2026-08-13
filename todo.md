@@ -6,3 +6,33 @@
 - [x] Phase 4: Implement public frontend pages (Home, Services, Request wizard, Confirmation, FAQ, Contact)
 - [x] Phase 5: Implement secure staff dashboard and request detail management interface
 - [x] Phase 6: Write comprehensive vitest unit tests and verify application functionality
+- [x] Diagnose and fix the persistent evidence-file upload server error with a verified private storage upload
+- [x] Reproduce and fix the remaining production evidence-upload error using the live browser request path
+- [x] Verify the exact browser-submitted PNG through server-signed retrieval and deny direct evidence proxy access
+- [x] Save and publish the final private-storage repair after signed retrieval verification
+- [x] Remove the fabricated default dashboard administrator session
+- [x] Add regression coverage confirming every staff-only OSINT procedure requires an administrator
+- [x] Verify an administrator can sign in, log out, and then loses dashboard access in the same browser session
+- [x] Publish the verified dashboard authentication repair
+- [x] Confirm the user record for oussamalannabi11@gmail.com has the administrator role
+- [x] Verify a real dashboard session is authenticated as oussamalannabi11@gmail.com, then confirm logout revokes access
+- [x] Save the authentication repair and re-verify the deployed dashboard sign-in and logout behavior
+- [x] Prepare and deliver a report of today’s completed fixes and validation results
+- [x] Add public reference-code case tracking with client-safe status labels and timeline
+- [x] Add an administrator-only staff message field for each case
+- [x] Show a save-your-reference-code instruction after successful request submission
+- [x] Add a public case-tracking page and navigation entry
+- [x] Test public tracking privacy and staff-only messaging controls
+- [x] Diagnose why Contact page messages are not reaching persistent storage
+- [x] Add a contact_messages table and public submission validation
+- [x] Add an administrator-only contact-message inbox in the staff dashboard
+- [x] Test public contact submission and administrator-only inbox access
+- [x] Add regression tests for invalid contact-form inputs and server-side field validation
+- [x] Verify the authenticated administrator dashboard renders the persisted contact inbox message
+- [x] Confirm unauthenticated and non-administrator visitors cannot access the inbox interface
+- [x] Render the dashboard non-administrator approval screen and verify the Contact Inbox is absent
+- [x] Run the dashboard UI access-gate regression test after extracting the role check
+- [x] Update fixed pricing to $34.99, $94.99, and $194.99 and remove price-range wording
+- [x] Add contact inbox keyword search and status filters for administrators
+- [x] Add administrator reply-status workflow for contact enquiries
+- [x] Test pricing presentation and protected inbox search, filtering, and status updates

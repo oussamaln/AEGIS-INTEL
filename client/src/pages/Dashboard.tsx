@@ -1,41 +1,107 @@
 import React, { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
+import { isAdministrator } from "@/lib/access";
+import { CONTACT_INBOX_FILTERS, filterContactInboxMessages, type ContactInboxFilter } from "@/lib/contactInbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, Lock, FileText, DollarSign, Activity, Users, LogOut, CheckCircle2, Clock, AlertCircle, ArrowLeft, Download, Upload, ExternalLink } from "lucide-react";
+import { Shield, Lock, FileText, DollarSign, Activity, Users, LogOut, CheckCircle2, Clock, AlertCircle, ArrowLeft, Download, Upload, ExternalLink, Mail } from "lucide-react";
 import { Link, useRoute, useLocation } from "wouter";
 import { toast } from "sonner";
-import { storagePut } from "@/lib/storage";
+
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("The selected report could not be read."));
+    reader.onload = () => {
+      const value = String(reader.result ?? "");
+      const separatorIndex = value.indexOf(",");
+      resolve(separatorIndex >= 0 ? value.slice(separatorIndex + 1) : value);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+type DashboardDeniedUser = {
+  email?: string | null;
+  name?: string | null;
+};
+
+export function DashboardAdminApprovalRequired({
+  user,
+  onLogout,
+}: {
+  user: DashboardDeniedUser;
+  onLogout: () => void;
+}) {
+  return (
+    <div className="min-h-screen bg-[#0a0e17] text-white flex items-center justify-center p-4">
+      <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl max-w-md w-full text-center space-y-4">
+        <Lock className="w-12 h-12 text-amber-400 mx-auto" />
+        <h1 className="text-2xl font-bold">Administrator Approval Required</h1>
+        <p className="text-slate-400 text-xs leading-relaxed">
+          You are signed in as <span className="text-slate-200">{user.email || user.name || "this account"}</span>, but it does not have staff administrator access.
+        </p>
+        <Button variant="outline" onClick={onLogout} className="w-full border-slate-700 bg-slate-950 text-slate-300 hover:text-white">
+          <LogOut className="w-3.5 h-3.5 mr-1" /> Sign Out
+        </Button>
+        <a href="/">
+          <Button className="w-full bg-cyan-600 hover:bg-cyan-500 text-white">
+            Return to Public Site
+          </Button>
+        </a>
+      </div>
+    </div>
+  );
+}
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const [, setLocation] = useLocation();
 
   // Route matching for detail view: /dashboard/requests/:id
   const [isDetailRoute, detailParams] = useRoute("/dashboard/requests/:id");
   const reqId = isDetailRoute && detailParams?.id ? parseInt(detailParams.id) : null;
 
-  if (!user || user.role !== 'admin') {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0e17] text-white flex items-center justify-center p-4">
+        <div className="text-center space-y-3">
+          <Shield className="w-10 h-10 text-cyan-400 mx-auto animate-pulse" />
+          <p className="text-xs text-slate-400 font-mono">VERIFYING SECURE SESSION…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
     return (
       <div className="min-h-screen bg-[#0a0e17] text-white flex items-center justify-center p-4">
         <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl max-w-md w-full text-center space-y-4">
           <Lock className="w-12 h-12 text-amber-400 mx-auto" />
-          <h1 className="text-2xl font-bold">Staff Access Required</h1>
+          <h1 className="text-2xl font-bold">Staff Sign-In Required</h1>
           <p className="text-slate-400 text-xs leading-relaxed">
-            You must be signed in as an authorized administrator to access the Aegis Intelligence operations platform.
+            Sign in with your authorized staff account to access the Aegis Intelligence operations platform.
           </p>
+          <Button onClick={() => startLogin()} className="w-full bg-cyan-600 hover:bg-cyan-500 text-white">
+            Sign In as Staff
+          </Button>
           <Link href="/">
-            <Button className="w-full bg-cyan-600 hover:bg-cyan-500 text-white mt-4">
+            <Button variant="outline" className="w-full border-slate-700 bg-slate-950 text-slate-300 hover:text-white">
               Return to Public Site
             </Button>
           </Link>
         </div>
       </div>
     );
+  }
+
+  if (!isAdministrator(user)) {
+    return <DashboardAdminApprovalRequired user={user} onLogout={() => logout()} />;
   }
 
   return (
@@ -191,7 +257,100 @@ function DashboardOverview() {
           </table>
         </div>
       </div>
+
+      <ContactInbox />
     </div>
+  );
+}
+
+function ContactInbox() {
+  const utils = trpc.useUtils();
+  const { data: messages, isLoading } = trpc.contact.list.useQuery();
+  const [keyword, setKeyword] = useState("");
+  const [statusFilter, setStatusFilter] = useState<ContactInboxFilter>("ALL");
+  const updateStatus = trpc.contact.updateStatus.useMutation({
+    onSuccess: () => {
+      utils.contact.list.invalidate();
+      toast.success("Contact message status updated.");
+    },
+    onError: error => toast.error(error.message),
+  });
+  const filteredMessages = filterContactInboxMessages(messages ?? [], keyword, statusFilter);
+  const statusStyle: Record<string, string> = {
+    NEW: "bg-cyan-500/10 border-cyan-500/30 text-cyan-300",
+    READ: "bg-emerald-500/10 border-emerald-500/30 text-emerald-300",
+    REPLIED: "bg-violet-500/10 border-violet-500/30 text-violet-300",
+    ARCHIVED: "bg-slate-800 border-slate-700 text-slate-400",
+  };
+
+  return (
+    <section className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
+      <div className="p-6 border-b border-slate-800 flex items-center justify-between gap-4">
+        <div>
+          <h2 className="font-bold text-white text-sm uppercase tracking-wider flex items-center gap-2"><Mail className="w-4 h-4 text-cyan-400" /> Contact Inbox</h2>
+          <p className="mt-1 text-xs text-slate-400">Public website messages. Available only to administrator accounts.</p>
+        </div>
+        <span className="px-2.5 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-[10px] font-mono">{messages?.filter(message => message.status === "NEW").length || 0} NEW</span>
+      </div>
+      <div className="p-4 sm:p-5 border-b border-slate-800 bg-slate-950/30 space-y-3">
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+          <Input
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            placeholder="Search name, email, subject, or enquiry…"
+            aria-label="Search contact inbox"
+            className="border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500"
+          />
+          <p className="text-xs text-slate-400" aria-live="polite">{filteredMessages.length} of {messages?.length ?? 0} messages</p>
+        </div>
+        <div className="flex flex-wrap gap-2" aria-label="Filter contact messages by status">
+          {CONTACT_INBOX_FILTERS.map((filter) => (
+            <Button
+              key={filter}
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setStatusFilter(filter)}
+              className={statusFilter === filter
+                ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20"
+                : "border-slate-700 bg-slate-950 text-slate-400 hover:bg-slate-900 hover:text-slate-200"}
+            >
+              {filter === "ALL" ? "All" : filter}
+            </Button>
+          ))}
+        </div>
+        <p className="text-[11px] text-slate-500">Use “Reply by Email” to open your mail client, then mark the enquiry as replied once you have sent the response.</p>
+      </div>
+      <div className="divide-y divide-slate-800">
+        {isLoading && <div className="p-6 text-xs text-slate-400">Loading secure inbox…</div>}
+        {filteredMessages.map(message => (
+          <article key={message.id} className="p-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-semibold text-slate-100 text-sm">{message.subject}</h3>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-mono border ${statusStyle[message.status]}`}>{message.status}</span>
+              </div>
+              <p className="mt-1 text-xs text-slate-400">{message.name} · <a href={`mailto:${message.email}`} className="text-cyan-400 hover:text-cyan-300">{message.email}</a> · {new Date(message.createdAt).toLocaleString()}</p>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-200">{message.message}</p>
+              {message.repliedAt && <p className="mt-3 text-[11px] font-mono text-violet-300">Marked replied {new Date(message.repliedAt).toLocaleString()}</p>}
+            </div>
+            <div className="flex flex-wrap lg:flex-col gap-2 self-start">
+              {message.status === "NEW" && <Button size="sm" variant="outline" disabled={updateStatus.isPending} onClick={() => updateStatus.mutate({ id: message.id, status: "READ" })} className="border-slate-700 bg-slate-950 text-slate-300 hover:text-white">Mark Read</Button>}
+              {message.status !== "ARCHIVED" && <a
+                href={`mailto:${message.email}?subject=${encodeURIComponent(`Re: ${message.subject}`)}`}
+                className="inline-flex h-8 items-center justify-center rounded-md border border-cyan-500/30 bg-cyan-500/10 px-3 text-xs font-medium text-cyan-200 transition-colors hover:bg-cyan-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+              >
+                Reply by Email
+              </a>}
+              {message.status !== "REPLIED" && message.status !== "ARCHIVED" && <Button size="sm" variant="outline" disabled={updateStatus.isPending} onClick={() => updateStatus.mutate({ id: message.id, status: "REPLIED" })} className="border-violet-500/30 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20 hover:text-violet-100">Mark Replied</Button>}
+              {message.status !== "ARCHIVED" && <Button size="sm" variant="outline" disabled={updateStatus.isPending} onClick={() => updateStatus.mutate({ id: message.id, status: "ARCHIVED" })} className="border-slate-700 bg-slate-950 text-slate-300 hover:text-white">Archive</Button>}
+            </div>
+          </article>
+        ))}
+        {!isLoading && (!messages || messages.length === 0) && <div className="p-8 text-center text-sm text-slate-400">No contact messages have been received.</div>}
+        {!isLoading && (messages?.length ?? 0) > 0 && filteredMessages.length === 0 && <div className="p-8 text-center text-sm text-slate-400">No messages match the current search and status filter.</div>}
+      </div>
+    </section>
   );
 }
 
@@ -203,6 +362,7 @@ function RequestDetail({ requestId }: { requestId: number }) {
   const [price, setPrice] = useState("");
   const [refundReason, setRefundReason] = useState("");
   const [noteContent, setNoteContent] = useState("");
+  const [clientMessage, setClientMessage] = useState("");
 
   // Payment form
   const [payCurrency, setPayCurrency] = useState("USDT");
@@ -226,6 +386,15 @@ function RequestDetail({ requestId }: { requestId: number }) {
     onError: (err) => toast.error(err.message),
   });
 
+  const addClientMessageMutation = trpc.osint.addClientMessage.useMutation({
+    onSuccess: () => {
+      toast.success("Client update published to the reference-code tracker.");
+      setClientMessage("");
+      utils.osint.getRequestDetail.invalidate({ id: requestId });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const recordPaymentMutation = trpc.osint.recordPayment.useMutation({
     onSuccess: () => {
       toast.success("Cryptocurrency payment recorded successfully.");
@@ -243,6 +412,8 @@ function RequestDetail({ requestId }: { requestId: number }) {
     },
     onError: (err) => toast.error(err.message),
   });
+
+  const uploadFileMutation = trpc.osint.uploadFile.useMutation();
 
   const downloadAttachmentMutation = trpc.osint.getSecureDownloadUrl.useQuery(
     { type: "attachment", id: 0 },
@@ -274,7 +445,13 @@ function RequestDetail({ requestId }: { requestId: number }) {
     }
     try {
       toast.message("Uploading report PDF to secure storage...");
-      const res = await storagePut(file.name, file, file.type);
+      const base64Data = await readFileAsBase64(file);
+      const safeFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const res = await uploadFileMutation.mutateAsync({
+        filename: `reports/${Date.now()}-${safeFilename}`,
+        contentType: file.type,
+        base64Data,
+      });
       uploadReportMutation.mutate({
         requestId,
         filename: file.name,
@@ -289,7 +466,7 @@ function RequestDetail({ requestId }: { requestId: number }) {
     return <div className="text-center py-20 text-slate-400">Loading case dossier...</div>;
   }
 
-  const { request, attachments, payments, reports, notes } = data;
+  const { request, attachments, payments, reports, notes, clientUpdates } = data;
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
@@ -438,6 +615,43 @@ function RequestDetail({ requestId }: { requestId: number }) {
                 className="bg-cyan-600 hover:bg-cyan-500 text-white"
               >
                 Add Private Note
+              </Button>
+            </div>
+          </div>
+
+          {/* Client-visible messages */}
+          <div className="bg-cyan-950/20 border border-cyan-900/60 rounded-2xl p-6 space-y-4">
+            <div>
+              <h2 className="text-lg font-bold text-white">Client Status & Messages</h2>
+              <p className="text-xs text-cyan-100/60 mt-1">Visible through the client’s reference code. Do not include evidence, contact details, or internal notes.</p>
+            </div>
+            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+              {clientUpdates.map(update => (
+                <div key={update.id} className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl text-xs space-y-1">
+                  <div className="flex items-center justify-between text-[10px] text-cyan-300/70 font-mono">
+                    <span>{update.status ? `STATUS: ${update.status}` : "STAFF MESSAGE"}</span>
+                    <span>{new Date(update.createdAt).toLocaleString()}</span>
+                  </div>
+                  <p className="text-slate-200 leading-relaxed">{update.message}</p>
+                </div>
+              ))}
+              {clientUpdates.length === 0 && <p className="text-xs text-slate-500">No client-visible updates yet.</p>}
+            </div>
+            <div className="space-y-2 pt-2 border-t border-cyan-900/40">
+              <Textarea
+                rows={3}
+                value={clientMessage}
+                onChange={e => setClientMessage(e.target.value)}
+                placeholder="Write a clear update for the client..."
+                className="bg-slate-950 border-slate-800 text-xs text-white resize-none"
+              />
+              <Button
+                size="sm"
+                onClick={() => { if (clientMessage.trim()) addClientMessageMutation.mutate({ requestId, message: clientMessage }); }}
+                disabled={addClientMessageMutation.isPending || !clientMessage.trim()}
+                className="bg-cyan-600 hover:bg-cyan-500 text-white"
+              >
+                Publish Client Update
               </Button>
             </div>
           </div>

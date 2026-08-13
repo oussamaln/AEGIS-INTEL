@@ -10,7 +10,19 @@ import { Shield, ArrowLeft, ArrowRight, Upload, CheckCircle2, Loader2, AlertCirc
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { storagePut } from "@/lib/storage"; // Note: frontend helper or direct forge storage upload
+
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("The selected file could not be read."));
+    reader.onload = () => {
+      const value = String(reader.result ?? "");
+      const separatorIndex = value.indexOf(",");
+      resolve(separatorIndex >= 0 ? value.slice(separatorIndex + 1) : value);
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function RequestPage() {
   const [, setLocation] = useLocation();
@@ -44,6 +56,8 @@ export default function RequestPage() {
     },
   });
 
+  const uploadFileMutation = trpc.osint.uploadFile.useMutation();
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -61,10 +75,13 @@ export default function RequestPage() {
 
     setUploading(true);
     try {
-      // Read file as ArrayBuffer and upload via storagePut helper or API
-      const buffer = await file.arrayBuffer();
-      // We can use storagePut directly since storagePut is client/server safe or we call a helper
-      const res = await storagePut(file.name, new Uint8Array(buffer), file.type);
+      const base64Data = await readFileAsBase64(file);
+      const safeFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const res = await uploadFileMutation.mutateAsync({
+        filename: `evidence/${Date.now()}-${safeFilename}`,
+        contentType: file.type as "image/jpeg" | "image/png" | "application/pdf" | "text/plain",
+        base64Data,
+      });
       setForm(prev => ({
         ...prev,
         attachments: [...prev.attachments, {

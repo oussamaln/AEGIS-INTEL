@@ -22,6 +22,27 @@
       "when": 1786307996475,
       "tag": "0002_natural_shaman",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1786560080652,
+      "tag": "0003_modern_spectrum",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1786572217819,
+      "tag": "0004_free_squadron_supreme",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1786580380763,
+      "tag": "0005_contact_reply_workflow",
+      "breakpoints": true
     }
   ]
 }
